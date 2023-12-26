@@ -35,7 +35,9 @@ def resize(image_path, new_width, new_height):
     resized_image = original_image.resize((new_width,new_height))
     return ImageTk.PhotoImage(resized_image)
 
-def slika(img,lang):
+def slika(img,lang,buttonPho,buttonCam):
+    buttonPho.configure(state = DISABLED)
+    buttonCam.configure(state = DISABLED)
     image = cv2.imread(img)
     fr_cv = image.copy()
     fr_h,fr_w,_ = fr_cv.shape
@@ -96,8 +98,13 @@ def slika(img,lang):
 
     cv2.imshow(img,fr_cv)
     cv2.waitKey(0)
+    buttonPho.configure(state=ACTIVE)
+    buttonCam.configure(state=ACTIVE)
 
-def video(lang):
+def video(lang,buttonPho,buttonCam):
+    buttonPho.configure(state=DISABLED)
+    buttonCam.configure(state=DISABLED)
+
     cap = cv2.VideoCapture(0)
 
     while True:
@@ -164,11 +171,13 @@ def video(lang):
 
     cap.release()
     cv2.destroyAllWindows()
+    buttonPho.configure(state=ACTIVE)
+    buttonCam.configure(state=ACTIVE)
 
-def chooseFile(lang):
+def chooseFile(lang,buttonPho,buttonCam):
     filepath = filedialog.askopenfilename(filetypes = [("Photos","*.png;*.jpg;*.jpeg")])
     if filepath:
-        slika(filepath,lang)
+        slika(filepath,lang,buttonPho,buttonCam)
 
 def choose(window, lang):
     for widget in window.winfo_children():
@@ -185,7 +194,7 @@ def choose(window, lang):
                        font=("Arial", 20),
                        fg="blue",
                        bg="black",
-                       command=lambda: chooseFile(lang),
+                       command=lambda: chooseFile(lang,buttonPho,buttonCam),
                        activeforeground="blue",
                        activebackground="black",
                        image=photoPho,
@@ -196,7 +205,7 @@ def choose(window, lang):
                       font=("Arial", 20),
                       fg="blue",
                       bg="black",
-                      command=lambda: video(lang),
+                      command=lambda: video(lang,buttonPho,buttonCam),
                       activeforeground="blue",
                       activebackground="black",
                       image=photoCam,
