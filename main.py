@@ -1,5 +1,19 @@
 import cv2
 import os
+from tkinter import *
+from tkinter import filedialog
+from PIL import Image, ImageTk
+
+class Language():
+    def __init__(self,welcome,odabir,slika,kamera,spol,dob,male,female):
+        self.welcome = welcome
+        self.odabir = odabir
+        self.slika = slika
+        self.kamera = kamera
+        self.spol = spol
+        self.dob = dob
+        self.male = male
+        self.female = female
 
 face1 = "opencv_face_detector.pbtxt"
 face2 = "opencv_face_detector_uint8.pb"
@@ -16,7 +30,12 @@ gen = cv2.dnn.readNet(gen2,gen1)
 la = ["(0-2)","(4-6)","(8-12)","(15-20)","(25-32)","(38-43)","(48-53)","(60-100)"]
 lg = ["Male","Female"]
 
-def slika(img):
+def resize(image_path, new_width, new_height):
+    original_image = Image.open(image_path)
+    resized_image = original_image.resize((new_width,new_height))
+    return ImageTk.PhotoImage(resized_image)
+
+def slika(img,lang):
     image = cv2.imread(img)
     fr_cv = image.copy()
     fr_h,fr_w,_ = fr_cv.shape
@@ -44,17 +63,30 @@ def slika(img):
         gen.setInput(blob)
         genderPreds = gen.forward()
         spol = lg[genderPreds[0].argmax()]
+        if spol == "Male":
+            spol = lang.male
+        else:
+            spol = lang.female
 
         age.setInput(blob)
         agePreds = age.forward()
         dob = la[agePreds[0].argmax()]
 
         cv2.putText(fr_cv,
-                    f"{spol}, {dob}",
-                    (faceBox[0],faceBox[1]+10),
+                    f"{lang.spol}: {spol}",
+                    (faceBox[0], faceBox[1] - 10),
                     cv2.FONT_HERSHEY_SIMPLEX,
-                    0.9,
-                    (0,255,255),
+                    1,
+                    (0, 255, 255),
+                    2,
+                    cv2.LINE_AA)
+
+        cv2.putText(fr_cv,
+                    f"{lang.dob}: {dob}",
+                    (faceBox[0], faceBox[1] + 30),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1,
+                    (0, 255, 255),
                     2,
                     cv2.LINE_AA)
 
@@ -65,7 +97,7 @@ def slika(img):
     cv2.imshow(img,fr_cv)
     cv2.waitKey(0)
 
-def video():
+def video(lang):
     cap = cv2.VideoCapture(0)
 
     while True:
@@ -99,17 +131,30 @@ def video():
             gen.setInput(blob)
             genderPreds = gen.forward()
             spol = lg[genderPreds[0].argmax()]
+            if spol == "Male":
+                spol = lang.male
+            else:
+                spol = lang.female
 
             age.setInput(blob)
             agePreds = age.forward()
             dob = la[agePreds[0].argmax()]
 
             cv2.putText(frame,
-                        f'{spol}, {dob}',
-                        (faceBox[0],faceBox[1]+10),
+                        f"{lang.spol}: {spol}",
+                        (faceBox[0],faceBox[1] - 10),
                         cv2.FONT_HERSHEY_SIMPLEX,
                         1,
                         (0,255,255),
+                        2,
+                        cv2.LINE_AA)
+
+            cv2.putText(frame,
+                        f"{lang.dob}: {dob}",
+                        (faceBox[0], faceBox[1] + 30),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        1,
+                        (0, 255, 255),
                         2,
                         cv2.LINE_AA)
 
@@ -120,5 +165,95 @@ def video():
     cap.release()
     cv2.destroyAllWindows()
 
-slika("Proba.jpg")
-video()
+def chooseFile(lang):
+    filepath = filedialog.askopenfilename(filetypes = [("Photos","*.png;*.jpg;*.jpeg")])
+    if filepath:
+        slika(filepath,lang)
+
+def choose(window, lang):
+    for widget in window.winfo_children():
+        widget.destroy()
+
+    label1 = Label(text = f"{lang.welcome}\n{lang.odabir}",
+                  font = ("Arial", 40, "bold"),
+                  fg = "white",
+                  bg = "black",
+                  pady = 50)
+    label1.pack()
+
+    buttonPho = Button(text=lang.slika,
+                       font=("Arial", 20),
+                       fg="blue",
+                       bg="black",
+                       command=lambda: chooseFile(lang),
+                       activeforeground="blue",
+                       activebackground="black",
+                       image=photoPho,
+                       compound="top")
+    buttonPho.pack()
+
+    buttonCam = Button(text=lang.kamera,
+                      font=("Arial", 20),
+                      fg="blue",
+                      bg="black",
+                      command=lambda: video(lang),
+                      activeforeground="blue",
+                      activebackground="black",
+                      image=photoCam,
+                      compound="top")
+    buttonCam.pack()
+
+window = Tk()
+window.geometry("840x630")
+window.title("Unaprijeđena zadaća")
+window.config(background = "black")
+photoCro = resize("Hrvatska.png",120,60)
+photoUK = resize("UK.png",120,60)
+photoSwe = resize("Sverige.png",120,60)
+photoPho = resize("Fotoaparat.png",100,100)
+photoCam = resize("Kamera.png",100,100)
+hrvatski = Language("Dobrodošli!","Što želite odabrati?","Slika","Kamera","Spol","Dob","Musko","Zensko")
+english = Language("Welcome!","What do you want to choose?","Photo","Camera","Sex","Age","Male","Female")
+svenska = Language("Välkommen!","Vad vill du välja?","Foto","Kamera","Sex","Alder","Man","Kvinna")
+
+label = Label(text = "Choose your language:",
+              font = ("Arial",40,"bold"),
+              fg = "white",
+              bg = "black",
+              pady = 50)
+label.pack()
+
+buttonCro = Button(text = "Hrvatski",
+                   font = ("Arial",20),
+                   fg = "blue",
+                   bg = "black",
+                   command = lambda: choose(window, hrvatski),
+                   activeforeground = "blue",
+                   activebackground = "black",
+                   image = photoCro,
+                   compound = "top")
+buttonCro.pack()
+
+buttonUK = Button(text = "English",
+                   font = ("Arial",20),
+                   fg = "blue",
+                   bg = "black",
+                   command = lambda: choose(window, english),
+                   activeforeground = "blue",
+                   activebackground = "black",
+                   image = photoUK,
+                   compound = "top")
+buttonUK.pack()
+
+buttonSwe = Button(text = "Svenska",
+                   font = ("Arial",20),
+                   fg = "blue",
+                   bg = "black",
+                   command = lambda: choose(window, svenska),
+                   activeforeground = "blue",
+                   activebackground = "black",
+                   image = photoSwe,
+                   compound = "top")
+buttonSwe.pack()
+
+window.mainloop()
